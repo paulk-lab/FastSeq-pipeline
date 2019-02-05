@@ -1,0 +1,2 @@
+Sample,Forward Read Path,Reverse Read Path,Adapter Path,Reference Path
+seq1,Samples/seq1/R1/PB-mCh-24x-c10_S34_L001_R1_001.fastq.gz,Samples/seq1/R2/PB-mCh-24x-c10_S34_L001_R2_001.fastq.gz,NexteraPE-PE.fa,References/PB-mCh-24x.fasta
