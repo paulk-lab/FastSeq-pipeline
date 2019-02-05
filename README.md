@@ -22,7 +22,7 @@ sequence according to a different python script.
 
 To run the pipeline simply type in the command line:
 
-`python3 fast_seq_pipeline.py <data_directory> <csv_file>`
+`python3 fastseq_pipeline.py <data_directory> <csv_file>`
 
 The data directory should contain all sequencing files, reference sequences
 and adapter sequences. The sequencing results should be in zipped fastq, the
