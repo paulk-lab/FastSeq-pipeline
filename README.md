@@ -47,7 +47,7 @@ of statistics from picard and bcftools. This file will be output to the
 
 An example is included, to run it simply run:
 
-`python3 fast_seq_pipeline.py data example.csv`
+`python3 fastseq_pipeline.py data example.csv`
 
 in this directory.
 
