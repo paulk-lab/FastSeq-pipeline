@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 from subprocess import run
 import sys
+import csv
 
 # Argument parsing setup
 parser = ArgumentParser(description='Process sequencing files '
@@ -25,11 +26,9 @@ parser.add_argument('csv_file', type=str,
                          'files for those samples can be found, all paths '
                          'are relative to the base_dir.')
 
-
 # Logging setup
 log = logging.getLogger("fastseq")
 log.addHandler(logging.StreamHandler(sys.stdout))
-
 
 logfile_formatter = logging.Formatter('%(asctime)s - %(name)s - '
                                       '%(levelname)s - %(message)s')
@@ -43,8 +42,7 @@ args = parser.parse_args()
 
 BASE_DIR = Path(args.base_dir)
 CSV_PATH = Path(args.csv_file)
-STATS_OUTPUT_PATH = BASE_DIR / "Output" / "final_stats.tsv.txt"
-
+STATS_OUTPUT_PATH = BASE_DIR / "Output" / "final_stats.csv"
 
 # ----------------------------------
 # Configuration Variable Definitions
@@ -61,6 +59,8 @@ SAMTOOLS = "/tools/samtools/bin/samtools"
 BCFTOOLS = "/tools/samtools/bin/bcftools"
 PICARD = "/tools/picard/picard.jar"
 
+GATK = "/Users/lucy.maynard/Downloads/gatk-4.1.0.0/gatk-package-4.1.0.0-local.jar"
+
 # Configuration for Trimmomatic
 LEAD_SCORE = 3
 TRAIL_SCORE = 3
@@ -71,6 +71,7 @@ WINDOW_QUALITY = 20
 # Configuration for bcftools
 VCF_QUAL = 20
 VCF_DP = 10
+VCF_AF = 0.7
 
 # Configuration for Picard
 PICARD_COVERAGE_CAP = 100000
@@ -85,9 +86,7 @@ PICARD_SAMPLE_SIZE = 5000
 def configure_paths(sample, fwd_read, rev_read, adapter_pth, ref_pth):
     """
     Create all derived paths based on fwd/rev read, adapter, reference
-
     Also sets up an output directory with sample name to output files
-
     Args:
         sample (str): Sample name
         fwd_read (str): Path to forward read rel. to docker base in .fastq.gz
@@ -96,16 +95,14 @@ def configure_paths(sample, fwd_read, rev_read, adapter_pth, ref_pth):
             see trimmomatic documentation for what to name the sequences in the
             .fasta file
         ref_pth (str): Path to reference rel. to docker base in .fasta
-
-
     Returns:
         dict: A dictionary with keys of type str, values of type Path,
-
         See function for what keys map to what.
-
     """
 
     sample_base = BASE_DIR / "Output" / sample
+    ref_dict = ref_pth.split(".fasta")[0] + str(".dict")
+    print(ref_dict)
     os.makedirs(sample_base)
 
     return {
@@ -115,6 +112,7 @@ def configure_paths(sample, fwd_read, rev_read, adapter_pth, ref_pth):
         "rev_read": BASE_DIR / rev_read,
         "adapter_pth": BASE_DIR / adapter_pth,
         "ref_pth": BASE_DIR / ref_pth,
+        "ref_dict": BASE_DIR / ref_dict,
 
         # Derived Sample Paths
         "fwd_trimmed": BASE_DIR / f"{fwd_read}.trimmed.fastq",
@@ -125,8 +123,11 @@ def configure_paths(sample, fwd_read, rev_read, adapter_pth, ref_pth):
 
         "sam_file": sample_base / f"{sample}.sam",
         "bam_file": sample_base / f"{sample}.bam",
-        "mpileup_file": sample_base / f"{sample}.mpileup",
-        "vcf_file": sample_base / f"{sample}.vcf",
+
+        "consensus_file": sample_base / f"{sample}.consensus.fasta",
+        "readgroup_bam": sample_base / f"{sample}.readgroup.bam",
+
+        "filtered_vcf_file": sample_base / f"{sample}.filtered.vcf.gz",
         "vcf_stats_file": sample_base / f"{sample}.vcf.stats.txt",
 
         "wgs_metrics_file": sample_base / f"{sample}.picard_wgs.txt",
@@ -136,33 +137,33 @@ def configure_paths(sample, fwd_read, rev_read, adapter_pth, ref_pth):
 
 
 def trimmomatic(sample, paths):
-        """
-        Simple wrapper for applying trimmomatic, trims adapters and cleans
-        sequence ends. Uses phred33 quality threshold.
+    """
+    Simple wrapper for applying trimmomatic, trims adapters and cleans
+    sequence ends. Uses phred33 quality threshold.
 
-        Args:
-            sample (str): Name of sample
-            paths (dict): Paths collection
+    Args:
+        sample (str): Name of sample
+        paths (dict): Paths collection
 
-        Returns: None
-        """
+    Returns: None
+    """
 
-        log.info(f"Starting trimmomatic for {sample}...")
+    log.info(f"Starting trimmomatic for {sample}...")
 
-        run(["java", "-jar", TRIMMOMATIC, "PE", "-phred33",
-             paths["fwd_read"], paths["rev_read"],  # Input Files
+    run(["java", "-jar", TRIMMOMATIC, "PE", "-phred33",
+         paths["fwd_read"], paths["rev_read"],  # Input Files
 
-             # Output Files
-             paths["fwd_trimmed"], paths["fwd_unpaired"],
-             paths["rev_trimmed"], paths["rev_unpaired"],
+         # Output Files
+         paths["fwd_trimmed"], paths["fwd_unpaired"],
+         paths["rev_trimmed"], paths["rev_unpaired"],
 
-             f"ILLUMINACLIP:{paths['adapter_pth']}:4:20:10",
-             f"LEADING:{LEAD_SCORE}",
-             f"TRAILING:{TRAIL_SCORE}",
-             f"SLIDINGWINDOW:{WINDOW_SIZE}:{WINDOW_QUALITY}",
-             f"MINLEN:{MIN_LEN}"])
+         f"ILLUMINACLIP:{paths['adapter_pth']}:4:20:10",
+         f"LEADING:{LEAD_SCORE}",
+         f"TRAILING:{TRAIL_SCORE}",
+         f"SLIDINGWINDOW:{WINDOW_SIZE}:{WINDOW_QUALITY}",
+         f"MINLEN:{MIN_LEN}"])
 
-        log.info(f"...end trimmomatic for {sample}.")
+    log.info(f"...end trimmomatic for {sample}.")
 
 
 def bwa(sample, paths):
@@ -175,6 +176,7 @@ def bwa(sample, paths):
 
     Returns: None
     """
+
     # index reference
     log.info(f"Starting BWA Index for {sample}...")
 
@@ -183,7 +185,6 @@ def bwa(sample, paths):
     log.info(f"...end BWA Index for {sample}.")
 
     # mem algorithm to align reads + generate .sam file
-
     log.info(f"Starting BWA mem for {sample}...")
 
     with open(paths["sam_file"], "w") as f:
@@ -194,77 +195,105 @@ def bwa(sample, paths):
     log.info(f"...end BWA mem for {sample}.")
 
 
-def samtools(sample, paths):
+def samtools_gatk(sample, paths):
     """
-    Wrapper for applying samtools/bcftools.
+    Wrapper for applying samtools/bcftools/GATK for indel/SNP calling +
+    consensus sequence generation.
 
-    First converts BAM file to SAM format, then generates a read pileup.
-    Finally creates a VCF file and filters it (though filtering may not be
-    working properly).
-
+    First converts SAM file to BAM format, then generates a reference
+    dictionary, and repairs readgroups in BAM file, which is required for GATK.
+    Finally creates a VCF file and filters it by allele depth & fraction
     Args:
         sample (str): Name of sample
         paths (dict): Paths collection
-
     Returns: None
     """
+
     # convert .sam to .bam
-    log.info(f"Starting samtools indexing for {sample}...")
+    log.info(f"Starting conversion of sam to bam for {sample}...")
 
     with open(paths["bam_file"], "w") as f:
         run([SAMTOOLS, "sort", paths["sam_file"]],
             stdout=f)  # output to SAMPLE_BAM_PTH
     run([SAMTOOLS, "index", paths["bam_file"]])
+    run([SAMTOOLS, "faidx", paths["ref_pth"]])
 
-    log.info(f"...end samtools indexing for {sample}.")
+    log.info(f"...end conversion of sam to bam for {sample}...")
 
-    # generate read pileup
-    log.info(f"Starting mpileup for {sample}...")
-    with open(paths["mpileup_file"], "w") as f:
-        run([BCFTOOLS, "mpileup", "-f",
-             paths["ref_pth"], paths["bam_file"]],
-            stdout=f)  # output to SAMPLE_MPILEUP_PTH
+    # generate reference dictionary
+    log.info(f"Creating reference dictionary for {sample}...")
 
-    log.info(f"...end mpileup for {sample}.")
+    run(["java", "-Xmx2048m", "-jar", GATK, "CreateSequenceDictionary",
+         "-R", paths["ref_pth"],
+         "-O", paths["ref_dict"]])  # Output file
 
-    # generate variant calling file (.vcf) for calling SNPs and indels
-    log.info(f"Starting VCF generation for {sample}...")
+    log.info(f"...done creating reference dictionary for {sample}...")
 
-    with open(paths["vcf_file"], "w") as f:
-        run([BCFTOOLS, "call", "-c", paths["mpileup_file"]],
-            stdout=f)  # output to SAMPLE_VCF_PTH
+    # Fix read groups in bam file
+    log.info(f"Fixing read groups for {sample}...")
 
-    log.info(f"...end VCF generation for {sample}.")
+    run(["java", "-Xmx2048m", "-jar", GATK, "AddOrReplaceReadGroups",
+         "-I", paths["bam_file"],  # Input file
+         "-O", paths["readgroup_bam"],  # Reference file
+         "-RGLB", "lib1",
+         "-RGPL", "illumina",
+         "-RGPU", "unit1",
+         "-RGSM", "20"])  # Output file
+    run([SAMTOOLS, "index", paths["readgroup_bam"]])
 
-    # filter .vcf file by quality thresholds
+    log.info(f"...done fixing read groups for {sample}...")
+
+    # generate VCF file with GATK Haplotype Caller
+    log.info(f"Creating VCF file for {sample}...")
+
+    run(["java", "-Xmx2048m", "-jar", GATK, "HaplotypeCaller",
+         "-R", paths["ref_pth"],  # Input file
+         "-I", paths["readgroup_bam"],  # Reference file
+         "-O", paths["vcf_file"]])  # Output file
+
+    log.info(f"...end creating VCF file for {sample}...")
+
+    # filter .vcf file by quality thresholds and output to a compressed file
     log.info(f"Starting VCF filter for {sample}...")
 
-    run([BCFTOOLS, "filter", "-i",
-         f"QUAL>{VCF_QUAL} && DP>{VCF_DP}",
-         paths["vcf_file"]])
+    with open(paths["filtered_vcf_file"], "w") as f:
+        run([BCFTOOLS, "filter", "-i",
+             f"FORMAT/DP>{VCF_DP} && "
+             f"(FORMAT/AD[*:1]/ FORMAT/DP)>{VCF_AF} && "
+             "FORMAT/AD[*:1] != '*'",
+             "-Oz",
+             paths["vcf_file"]], stdout=f)
 
     log.info(f"...end VCF filter for {sample}.")
+
+    # index compressed and filtered VCF file
+    run(["tabix", paths["filtered_vcf_file"]])
+
+    # create consensus sequence
+    log.info(f"Starting consensus generation for {sample}...")
+
+    with open(paths["consensus_file"], "w") as f:
+        run([BCFTOOLS, "consensus", "-f", paths["ref_pth"],
+             paths["filtered_vcf_file"]], stdout=f)
+
+    log.info(f"...end consensus filter for {sample}.")
 
 
 def generate_stats(sample, paths):
     """
     Wrapper to compute stats from bcf tools and from picard.
-
     Gets VCF stats from BCF tools then collects WGS and Size metrics using
     Picard.
-
     Args:
         sample (str): Name of sample
         paths (dict): Paths collection
-
     Returns: None
-
     """
     # BCFTOOLS stats
     log.info(f"Starting VCF stats for {sample}...")
 
     with open(paths["vcf_stats_file"], "w") as f:
-        run([BCFTOOLS, "stats", paths["vcf_file"]],
+        run([BCFTOOLS, "stats", paths["filtered_vcf_file"]],
             stdout=f)  # output to SAMPLE_VCF_STATS_PTH
 
     log.info(f"...end VCF stats for {sample}.")
@@ -307,7 +336,6 @@ def extract_bcf_stats(path):
 
     Returns:
         dict: keys as stat names and the values as stat values
-
     """
 
     # Not ideal to hardcode here nor below, but gets the job done
@@ -317,8 +345,9 @@ def extract_bcf_stats(path):
                          "number of others:",
                          "number of multiallelic sites:",
                          "number of multiallelic SNP sites:"}
-
-    stats = {}
+    p = str(path.resolve()).split("/")[-1]
+    p2 = p.split(".")[0]
+    stats = {"Sample": p2}
 
     with open(path) as statsf:
         for line in statsf:
@@ -349,7 +378,6 @@ def extract_picard_stats(path):
 
     Returns:
         dict: keys as stat names and the values as stat values
-
     """
 
     with open(path) as statsf:
@@ -379,13 +407,11 @@ def extract_picard_stats(path):
 # ----------------------------------
 
 with open(CSV_PATH) as csvfile:
-
     reader = DictReader(csvfile)
 
     final_stats = []
 
     for entry in reader:
-
         sample_name = entry["Sample"]
         fwd_pth = entry["Forward Read Path"]
         rev_pth = entry["Reverse Read Path"]
@@ -403,7 +429,7 @@ with open(CSV_PATH) as csvfile:
         bwa(sample_name, path_dict)
 
         # 3. SAMTOOLS/BCFTOOLS (call SNPS/indels)
-        samtools(sample_name, path_dict)
+        samtools_gatk(sample_name, path_dict)
 
         # 4. Generate statistics
         generate_stats(sample_name, path_dict)
@@ -416,16 +442,26 @@ with open(CSV_PATH) as csvfile:
         # Assuming no overlap in stat names
         vcf_st.update(picard_wgs_st)
         vcf_st.update(picard_size_st)
-        vcf_st["Sample Name"] = sample_name
 
         final_stats.append(vcf_st)
 
 log.info(f"Starting writing final stats...")
 
 with open(STATS_OUTPUT_PATH, "w") as statsout:
-    # Assumes all stat entries will have exactly the same headers
-    writer = DictWriter(statsout, final_stats[0].keys(), delimiter="\t")
-    writer.writeheader()
-    writer.writerows(final_stats)
+    # Extract keys (Metric names, e.g. number of snps) from first dictionary
+    # of final_stat list
+    values_as_cols = [[*final_stats[0]]]
+    # Extract values from each dict in final_stats list and append as elemnt
+    # to values_as_cols list
+    for item in final_stats:
+        vals = list(item.values())
+        values_as_cols.append(vals)
+    values_as_rows = list(zip(*values_as_cols))
+    compiled_stats = [list(elem) for elem in values_as_rows]
+
+    # Write compiled_stats list (of lists) to csv file
+    writer = csv.writer(statsout, delimiter=",")
+    for item in compiled_stats:
+        writer.writerow(item)
 
 log.info(f"...end writing stats.")
