@@ -34,6 +34,11 @@ parser.add_argument('AF', type=float,
 
 
 
+parser.add_argument('AF', type=float,
+					help='Allele fraction: the fraction of all reads conferring '
+						 'a base. AF must be above this threshold for pipeline to ' 
+						 'confidently call a base at a specified position.')
+
 # Logging setup
 log = logging.getLogger("fastseq")
 log.addHandler(logging.StreamHandler(sys.stdout))
@@ -83,6 +88,7 @@ WINDOW_QUALITY = 20
 VCF_QUAL = 20
 VCF_DP = 10
 VCF_AF= args.AF
+
 
 # Configuration for Picard
 PICARD_COVERAGE_CAP = 100000
