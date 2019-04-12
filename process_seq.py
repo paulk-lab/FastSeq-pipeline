@@ -56,12 +56,12 @@ STATS_OUTPUT_PATH = BASE_DIR / "Output" / "final_stats.csv"
 # Tool Paths
 TRIMMOMATIC = "/tools/trimmomatic/trimmomatic-0.38.jar"
 BWA = "/tools/bwa/bwa"
-SAMTOOLS = "/tools/samtools/bin/samtools"
-BCFTOOLS = "/tools/samtools/bin/bcftools"
+SAMTOOLS = "/usr/bin/samtools"
+BCFTOOLS = "/usr/bin/bcftools"
 PICARD = "/tools/picard/picard.jar"
 
-GATK = "/Users/lucy.maynard/Downloads/gatk-4.1.0.0/gatk-package-4.1.0.0-local.jar"
-TABIX = "/Users/lucy.maynard/anaconda3/bin/tabix"
+GATK = "/gatk/gatk"
+TABIX = "/usr/bin/tabix"
 
 # Configuration for Trimmomatic
 LEAD_SCORE = 3
