@@ -32,4 +32,4 @@ csv = working / args.csv_file
 run(["docker", "run",
      "-v", f"{base}:/home/worker/host",
      "-v", f"{csv}:/home/worker/samples.csv",
-     "paulklab/fastseq-pipeline:version0.1a"])
+     "paulklab/fastseq-pipeline:version0.2a"])
