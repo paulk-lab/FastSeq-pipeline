@@ -77,12 +77,11 @@ RUN chmod +rx /root
 
 #### Copy script and sample data ####
 COPY process_seq.py .
-COPY example.csv .
-COPY data data
 
 RUN chown -R worker:workergroup /home/worker
 RUN chown -R worker:workergroup /tools
 
 USER worker
 
+#### Run script according to arguments passed in via wrapper script ####
 CMD python3.6 process_seq.py /home/worker/host /home/worker/samples.csv
