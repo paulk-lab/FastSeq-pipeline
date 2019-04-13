@@ -58,7 +58,7 @@ adapters are in `data/adapters/adapter1.fa` then the csv file should contain
 
 Finally, the script will generate a final stats file which contains a selection
 of statistics from picard and bcftools. This file will be output to the 
-`Output` folder under the name `final_stats.tsv.txt`.
+`Output` folder under the name `final_stats.csv`.
 
 An example is included. To run it, simply execute the following command:
 
