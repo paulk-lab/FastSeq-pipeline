@@ -3,14 +3,14 @@
 Sequence processing pipeline used to analyze packaged viral genomes
 """
 from argparse import ArgumentParser
-from csv import DictReader, DictWriter
+from csv import DictReader
 import logging
 import os
+import pandas as pd
 from pathlib import Path
 from subprocess import run
 import sys
-import subprocess
-import csv
+
 
 # Argument parsing setup
 parser = ArgumentParser(description='Process sequencing files '
@@ -449,21 +449,9 @@ with open(CSV_PATH) as csvfile:
 
 log.info(f"Starting writing final stats...")
 
-with open(STATS_OUTPUT_PATH, "w") as statsout:
-    # Extract keys (Metric names, e.g. number of snps) from first dictionary
-    # of final_stat list
-    values_as_cols = [[*final_stats[0]]]
-    # Extract values from each dict in final_stats list and append as elemnt
-    # to values_as_cols list
-    for item in final_stats:
-        vals = list(item.values())
-        values_as_cols.append(vals)
-    values_as_rows = list(zip(*values_as_cols))
-    compiled_stats = [list(elem) for elem in values_as_rows]
-
-    # Write compiled_stats list (of lists) to csv file
-    writer = csv.writer(statsout, delimiter=",")
-    for item in compiled_stats:
-        writer.writerow(item)
+df = pd.DataFrame.from_records(final_stats)
+df.set_index("Sample", inplace=True)
+flipped = df.transpose()
+flipped.to_csv(STATS_OUTPUT_PATH, index_label="Sample")
 
 log.info(f"...end writing stats.")
