@@ -56,8 +56,8 @@ STATS_OUTPUT_PATH = BASE_DIR / "Output" / "final_stats.csv"
 # Tool Paths
 TRIMMOMATIC = "/tools/trimmomatic/trimmomatic-0.38.jar"
 BWA = "/tools/bwa/bwa"
-SAMTOOLS = "/usr/bin/samtools"
-BCFTOOLS = "/usr/bin/bcftools"
+SAMTOOLS = "/tools/samtools/bin/samtools"
+BCFTOOLS = "/tools/samtools/bin/bcftools"
 PICARD = "/tools/picard/picard.jar"
 
 GATK = "/gatk/gatk"

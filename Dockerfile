@@ -18,6 +18,29 @@ WORKDIR /tools
 
 USER root
 
+#### New version bcftools and samtools Install ####
+WORKDIR /tools
+RUN mkdir samtools
+WORKDIR samtools
+RUN wget https://github.com/samtools/htslib/releases/download/1.9/htslib-1.9.tar.bz2 && \
+    tar --bzip2 -xvf htslib-1.9.tar.bz2
+RUN wget https://github.com/samtools/bcftools/releases/download/1.9/bcftools-1.9.tar.bz2 && \
+    tar --bzip2 -xvf bcftools-1.9.tar.bz2
+RUN wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2 && \
+    tar --bzip2 -xvf samtools-1.9.tar.bz2
+
+RUN cd samtools-1.9 && \
+    ./configure --prefix=/tools/samtools && \
+    make && \
+    make install
+
+RUN cd bcftools-1.9 && \
+    ./configure --prefix=/tools/samtools && \
+    make && \
+    make install
+
+RUN rm -rf bcftools-1.9.tar.bz2 htslib-1.9.tar.bz2 samtools-1.9.tar.bz2
+
 
 #### BWA Install ####
 WORKDIR /tools
