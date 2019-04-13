@@ -349,9 +349,8 @@ def extract_bcf_stats(path):
                          "number of others:",
                          "number of multiallelic sites:",
                          "number of multiallelic SNP sites:"}
-    p = str(path.resolve()).split("/")[-1]
-    p2 = p.split(".")[0]
-    stats = {"Sample": p2}
+
+    stats = {}
 
     with open(path) as statsf:
         for line in statsf:
@@ -434,17 +433,19 @@ with open(CSV_PATH) as csvfile:
         # 4. Generate statistics
         generate_stats(sample_name, path_dict)
 
+        tmp_st = {"Sample": sample_name}
+
         # 5. Extract statistics and collate into a single row
         vcf_st = extract_bcf_stats(path_dict["vcf_stats_file"])
         picard_wgs_st = extract_picard_stats(path_dict["wgs_metrics_file"])
         picard_size_st = extract_picard_stats(path_dict["size_metrics_file"])
 
         # Assuming no overlap in stat names
-        vcf_st.update(picard_wgs_st)
-        vcf_st.update(picard_size_st)
-        # vcf_st["Sample Name"] = sample_name
+        tmp_st.update(vcf_st)
+        tmp_st.update(picard_wgs_st)
+        tmp_st.update(picard_size_st)
 
-        final_stats.append(vcf_st)
+        final_stats.append(tmp_st)
 
 log.info(f"Starting writing final stats...")
 
