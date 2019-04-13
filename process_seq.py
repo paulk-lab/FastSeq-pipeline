@@ -46,7 +46,7 @@ CSV_PATH = Path(args.csv_file)
 STATS_OUTPUT_PATH = BASE_DIR / "Output" / "final_stats.csv"
 
 # ----------------------------------
-# Configuration Variable Definitions
+# Tool Path Definitions
 # ----------------------------------
 
 # For simplicity, all program configurations + paths are treated as global
@@ -63,6 +63,10 @@ PICARD = "/tools/picard/picard.jar"
 GATK = "/gatk/gatk.jar"
 TABIX = "/usr/bin/tabix"
 
+# ----------------------------------
+# Configuration Variable Definitions
+# ----------------------------------
+
 # Configuration for Trimmomatic
 LEAD_SCORE = 3
 TRAIL_SCORE = 3
@@ -74,6 +78,13 @@ WINDOW_QUALITY = 20
 VCF_QUAL = 20
 VCF_DP = 10
 VCF_AF = 0.7
+
+# Configuration for GATK
+RGID = 4
+RGLB = "lib1"
+RGPL = "illumina",
+RGPU = "unit1",
+RGSM = 20
 
 # Configuration for Picard
 PICARD_COVERAGE_CAP = 100000
@@ -234,11 +245,11 @@ def samtools_gatk(sample, paths):
     run(["java", "-Xmx2048m", "-jar", GATK, "AddOrReplaceReadGroups",
          "-I", paths["bam_file"],  # Input file
          "-O", paths["readgroup_bam"],  # Reference file
-         "-RGID", "4",
-         "-RGLB", "lib1",
-         "-RGPL", "illumina",
-         "-RGPU", "unit1",
-         "-RGSM", "20"])  # Output file
+         "-RGID", f"{RGID}",
+         "-RGLB", f"{RGLB}",
+         "-RGPL", f"{RGPL}",
+         "-RGPU", f"{RGPU}",
+         "-RGSM", f"{RGSM}"])  # Output file
     run([SAMTOOLS, "index", paths["readgroup_bam"]])
 
     log.info(f"...done fixing read groups for {sample}...")

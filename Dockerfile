@@ -85,4 +85,4 @@ RUN chown -R worker:workergroup /tools
 
 USER worker
 
-CMD python3.6 process_seq.py /home/worker/host /home/worker/example.csv
+CMD python3.6 process_seq.py /home/worker/host /home/worker/samples.csv
