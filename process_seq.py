@@ -60,7 +60,7 @@ SAMTOOLS = "/tools/samtools/bin/samtools"
 BCFTOOLS = "/tools/samtools/bin/bcftools"
 PICARD = "/tools/picard/picard.jar"
 
-GATK = "/gatk/gatk"
+GATK = "/gatk/gatk.jar"
 TABIX = "/usr/bin/tabix"
 
 # Configuration for Trimmomatic
@@ -194,7 +194,7 @@ def bwa(sample, paths):
     log.info(f"...end BWA mem for {sample}.")
 
 
-def samtools(sample, paths):
+def samtools_gatk(sample, paths):
     """
     Wrapper for applying samtools/bcftools/GATK for indel/SNP calling +
     consensus sequence generation.
@@ -428,8 +428,8 @@ with open(CSV_PATH) as csvfile:
         # 2. BWA (align to reference)
         bwa(sample_name, path_dict)
 
-        # 3. SAMTOOLS/BCFTOOLS (call SNPS/indels)
-        samtools(sample_name, path_dict)
+        # 3. SAMTOOLS/GATK/BCFTOOLS (call SNPS/indels)
+        samtools_gatk(sample_name, path_dict)
 
         # 4. Generate statistics
         generate_stats(sample_name, path_dict)
