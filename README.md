@@ -6,6 +6,7 @@
 8GB should suffice.
 - Docker
 - Python 3
+- Pandas
 
 ## Instructions
 
@@ -17,12 +18,21 @@ by default. Otherwise install Python from here:
 https://www.python.org/downloads/
 
 This pipeline uses a simple Python script to launch a prebuilt Docker container
-that contains all the needed sequence processing tools. These tools are run in
-sequence according to a different Python script.
+that contains all the needed sequence processing tools and will run the 
+analysis **exactly** as was run for the paper. These tools are run in sequence 
+according to a different Python script, `process_seq.py`. If you wish to 
+understand the exact parameters used to analyze the sequences, please look at 
+the top of `process_seq.py`, you will find a section where configuration
+variables are set. These can be modified as desired, **however** the docker
+container will not reflect these changes by default. You will need to rebuild
+the docker container if you want it to run with the new settings *or* you
+will need to modify the paths (also listed at the top of the `process_seq.py`
+file) to point to a set of locally installed tools.
 
-To run the pipeline, simply type the following in the command line:
+To run the pipeline as originally configured, simply type the following in the 
+command line:
 
-`python3 fastseq_pipeline.py <data_directory> <csv_file>`
+`python3 ref_fastseq_pipeline.py <data_directory> <csv_file>`
 
 The data directory should contain all sequencing files, reference sequences
 and adapter sequences. The sequencing results should be in zipped FASTQ, the
@@ -50,6 +60,8 @@ An example is included. To run it, simply execute the following command:
 `python3 fastseq_pipeline.py data example.csv`
 
 in this directory.
+
+The output should match the `ref_stats.csv` file.
 
 Feel free to modify the code as needed. The code and tooling is licensed under
 the Creative Commons with Attribution license.
