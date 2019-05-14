@@ -75,13 +75,10 @@ RUN mkdir /home/worker/data
 WORKDIR /home/worker
 RUN chmod +rx /root
 
-#### Copy script and sample data ####
-COPY process_seq.py .
-
 RUN chown -R worker:workergroup /home/worker
 RUN chown -R worker:workergroup /tools
 
 USER worker
 
-#### Run script according to arguments passed in via wrapper script ####
-CMD python3.6 process_seq.py /home/worker/host /home/worker/samples.csv
+#### Run script according to linked files passed in via wrapper script ####
+CMD python3.6 /home/worker/process_seq.py /home/worker/host /home/worker/samples.csv

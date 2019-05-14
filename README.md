@@ -24,12 +24,11 @@ according to a different Python script, `process_seq.py`.
 
 For the most part, if you wish to understand the exact parameters used to 
 analyze the sequences, please look at the top of `process_seq.py`, you will 
-find a section where configuration variables are set. These can be modified as 
-desired, **however** the docker container will not reflect these changes by 
-default. You will need to rebuild the docker container if you want it to run 
-with the new settings *or* you will need to modify the paths (also listed at 
-the top of the `process_seq.py` file) to point to a set of locally installed 
-tools.
+find a section where configuration variables are set. You can choose to run 
+the pipeline using the docker container *or* you will need to modify the paths 
+(also listed at the top of the `process_seq.py` file) to point to a set of 
+locally installed tools. **However** should you modify the paths and use your
+own set of tools we cannot guarantee that the pipeline will work as expected.
 
 There may be some other configurations of interest, for this look deeper in the
 `process_seq.py` script.
@@ -37,7 +36,7 @@ There may be some other configurations of interest, for this look deeper in the
 To run the pipeline as originally configured, simply type the following in the 
 command line:
 
-`python3 ref_fastseq_pipeline.py <data_directory> <csv_file>`
+`python3 run_fastseq_pipeline.py process_seq.py <data_directory> <csv_file>`
 
 The data directory should contain all sequencing files, reference sequences
 and adapter sequences. The sequencing results should be in zipped FASTQ, the
@@ -62,7 +61,7 @@ of statistics from picard and bcftools. This file will be output to the
 
 An example is included. To run it, simply execute the following command:
 
-`python3 fastseq_pipeline.py data example.csv`
+`python3 run_fastseq_pipeline.py process_seq.py data example.csv`
 
 in this directory.
 
